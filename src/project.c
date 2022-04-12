@@ -42,6 +42,7 @@ void addMedals(char *input, Nation *database, int size)
 
     sscanf(input, "%*c %s %u %u %u", name, &g, &s, &b);
 
+    // Find correct entry and append values
     for (int i = 0; i < size; i++)
     {
         Nation *cur = &database[i];
@@ -58,7 +59,7 @@ void addMedals(char *input, Nation *database, int size)
 
 void printDatabase(Nation *database, int size)
 {
-    // implement ordering
+    // TODO: implement ordering
     for (int i = 0; i < size; i++)
     {
         Nation cur = database[i];
@@ -67,7 +68,24 @@ void printDatabase(Nation *database, int size)
     printf("SUCCESS\n");
 }
 
-void saveToFile(Nation *database);
+void saveToFile(char *input, Nation *database, int size)
+{
+    char filename[1000];
+    sscanf(input, "%*c %s", filename);
+
+    FILE *f = fopen(filename, "w");
+    if (!f)
+    {
+        printf("Error. Could not write to file.\n");
+        return;
+    }
+    for (int i = 0; i < size; i++)
+    {
+        Nation cur = database[i];
+        fprintf(f, "%s %u %u %u\n", cur.name, cur.gold, cur.silver, cur.bronze);
+    }
+    fclose(f);
+}
 
 void loadFromFile(Nation *database);
 
@@ -105,7 +123,10 @@ int main(void)
         case 'O':
             break;
         case 'W':
+        {
+            saveToFile(input, database, size);
             break;
+        }
         case 'Q':
         {
             printf("Quitting...\n");
