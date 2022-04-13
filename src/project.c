@@ -33,8 +33,7 @@ Nation *addNation(char *input, Nation *database)
     database = realloc(database, sizeof(Nation) * (size + 1));
     free(database[size - 1].name);
     database[size - 1] = newNation;
-    database[size].name = malloc(1);
-    database[size].name[0] = '\0';
+    database[size].name = calloc(1, sizeof(char));
 
     return database;
 }
@@ -64,28 +63,21 @@ void addMedals(char *input, Nation *database)
 }
 
 // Comparison function to determine the ordering of elements when sorted
-int cmp_(Nation a, Nation b)
-{
-    if (a.gold > b.gold)
-        return 1;
-    else if (a.gold < b.gold)
-        return 0;
-    else
+int cmp_(Nation a, Nation b, int cmp)
+{   
+    switch (cmp)
     {
-        if (a.silver > b.silver)
-            return 1;
-        else if (a.silver < b.silver)
-            return 0;
-        else
-        {
-            if (a.bronze >= b.bronze)
-                return 1;
-            else
-                return 0;
-        }
+    case 2:
+        return a.gold > b.gold;
+    case 1: 
+        return a.silver > b.silver;
+    case 0:
+        return a.bronze > b.bronze;
     }
+    return 0;
 }
 
+// Helper function to swap memory addresses' values
 void swap(Nation *a, Nation *b)
 {
     Nation temp = *a;
@@ -93,31 +85,33 @@ void swap(Nation *a, Nation *b)
     *b = temp;
 }
 
+// Simple bubblesort
+// The database is sorted 3 times, once for each medal, resulting in correct ordering
 Nation *bubblesort(Nation *database)
 {
     int size = 0;
-    while (database[size].name[0] != '\0')
-        size++;
-    Nation *sorted = calloc(size, sizeof(Nation));
+    while (database[size].name[0] != '\0') size++;
 
-    int i, j;
-    for (i = 0; i < size; i++)
+    int cmp, i, j;
+    for (cmp = 0; cmp < 3; cmp++)
     {
-        for (j = 1; j < size - i - 1; j++)
+        for (i = 0; i < size; i++)
         {
-            if (cmp_(database[i], database[j]))
-                swap(&database[i], &database[j]);
+            for (j = 0; j < size - i - 1; j++)
+            {
+                if (!cmp_(database[j], database[j + 1], cmp)) 
+                    swap(&database[j], &database[j + 1]);
+            }
         }
     }
-
-    return sorted;
+    return database;
 }
 
 void printDatabase(Nation *database)
 {
-    // TODO: implement ordering, at the moment it modifies the original array, need to make a copy of the original
     bubblesort(database);
     int i = 0;
+    // Iterate through array and print values
     while (database[i].name[0] != '\0')
     {
         Nation cur = database[i];
@@ -139,6 +133,7 @@ void saveToFile(char *input, Nation *database)
         return;
     }
 
+    // Iterate through the database by index and write each entry on its own line
     int i = 0;
     while (database[i].name[0] != '\0')
     {
@@ -161,7 +156,7 @@ Nation *loadFromFile(char *input)
     // Get line count
     int len = 0;
     char c = getc(f);
-    if (!feof(f))
+    if (!feof(f)) 
         len++;
     while (c != EOF)
     {
@@ -170,6 +165,7 @@ Nation *loadFromFile(char *input)
         c = getc(f);
     }
     rewind(f);
+
     // Add entries to database
     Nation *database = calloc(len, sizeof(Nation));
     Nation *cur;
@@ -187,7 +183,8 @@ Nation *loadFromFile(char *input)
         cur->silver = s;
         cur->bronze = b;
     }
-    // TODO: last element does not terminate the database
+    cur = &database[len - 1];
+    cur->name = calloc(1, sizeof(char));
 
     fclose(f);
     return database;
@@ -195,6 +192,7 @@ Nation *loadFromFile(char *input)
 
 void freeAndQuit(Nation *database)
 {
+    // Iterate through the database, freeing the allocated names
     int i = 0;
     while (database[i].name[0] != '\0')
     {
@@ -207,11 +205,12 @@ void freeAndQuit(Nation *database)
 
 int main(void)
 {
+    // Create and initialize the database
     Nation *database;
     database = calloc(1, sizeof(Nation));
-    database[0].name = malloc(1);
-    database[0].name[0] = '\0';
+    database[0].name = calloc(1, sizeof(char));
 
+    // Infinite loop that reads input from command line
     while (1)
     {
         char input[1000];
@@ -238,10 +237,8 @@ int main(void)
             break;
         case 'O':
         {
-            Nation *fromFile = loadFromFile(input);
-            free(database);
-            database = malloc(sizeof(fromFile));
-            database = fromFile;
+            freeAndQuit(database);
+            database = loadFromFile(input);
             break;
         }
         case 'W':
