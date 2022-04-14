@@ -1,4 +1,4 @@
-SRC_FILES=project.c main.c
+SRC_FILES=project.c
 CFLAGS += -std=c99 -g -Wall -Wextra -Wno-missing-field-initializers
 
 all: project

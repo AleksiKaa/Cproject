@@ -5,16 +5,21 @@
 
 Nation *addNation(char *input, Nation *database)
 {
+    // Read and check arguments
     char nation[1000];
-    sscanf(input, "%*c %s", nation);
+    if (sscanf(input, "%*c %s", nation) != 1)
+    {
+        printf("A should be followed by exactly 1 argument.\n");
+        return NULL;
+    }
 
-    // check for duplicates and get size of database
+    // Check for duplicates and get size of database
     int size = 0;
     while (database[size].name[0] != '\0')
     {
         if (!strcmp(nation, database[size].name))
         {
-            printf("Nation is already in database. No entry added.\n");
+            printf("Nation \"%s\" is already in the database.\n", nation);
             return NULL;
         }
         size++;
@@ -34,16 +39,21 @@ Nation *addNation(char *input, Nation *database)
     free(database[size - 1].name);
     database[size - 1] = newNation;
     database[size].name = calloc(1, sizeof(char));
-
+    printf("SUCCESS\n");
     return database;
 }
 
 void addMedals(char *input, Nation *database)
 {
     char name[1000];
-    unsigned int g, s, b;
+    int g, s, b;
 
-    sscanf(input, "%*c %s %u %u %u", name, &g, &s, &b);
+    // Read and check arguments
+    if (sscanf(input, "%*c %s %d %d %d %*s", name, &g, &s, &b) != 4)
+    {
+        printf("M should be followed by exactly 4 arguments.\n");
+        return;
+    }
 
     // Find correct entry and append values
     int i = 0;
@@ -55,6 +65,7 @@ void addMedals(char *input, Nation *database)
             cur->gold += g;
             cur->silver += s;
             cur->bronze += b;
+            printf("SUCCESS\n");
             return;
         }
         i++;
@@ -68,11 +79,11 @@ int cmp_(Nation a, Nation b, int cmp)
     switch (cmp)
     {
     case 2:
-        return a.gold > b.gold;
+        return a.gold >= b.gold;
     case 1: 
-        return a.silver > b.silver;
+        return a.silver >= b.silver;
     case 0:
-        return a.bronze > b.bronze;
+        return a.bronze >= b.bronze;
     }
     return 0;
 }
@@ -86,11 +97,13 @@ void swap(Nation *a, Nation *b)
 }
 
 // Simple bubblesort
-// The database is sorted 3 times, once for each medal, resulting in correct ordering
+// The database is sorted 3 times, once for each medal type, resulting in correct ordering
 Nation *bubblesort(Nation *database)
 {
     int size = 0;
     while (database[size].name[0] != '\0') size++;
+
+    if (size <= 1) return NULL;
 
     int cmp, i, j;
     for (cmp = 0; cmp < 3; cmp++)
@@ -141,6 +154,7 @@ void saveToFile(char *input, Nation *database)
         fprintf(f, "%s %u %u %u\n", cur.name, cur.gold, cur.silver, cur.bronze);
         i++;
     }
+    printf("SUCCESS\n");
     fclose(f);
 }
 
@@ -150,9 +164,11 @@ Nation *loadFromFile(char *input)
     sscanf(input, "%*c %s", filename);
 
     FILE *f = fopen(filename, "r");
-    if (!f)
+    if (f == NULL)
+    {   
+        printf("Cannot open file %s for reading.\n", filename);
         return NULL;
-
+    }
     // Get line count
     int len = 0;
     char c = getc(f);
@@ -201,4 +217,63 @@ void freeAndQuit(Nation *database)
     }
     free(database[i].name);
     free(database);
+    printf("SUCCESS\n");
+}
+
+int main(void)
+{
+    // Create and initialize the database
+    Nation *database;
+    database = calloc(1, sizeof(Nation));
+    database[0].name = calloc(1, sizeof(char));
+
+    // Infinite loop that reads input from command line
+    while (1)
+    {
+        char input[1000];
+        fgets(input, sizeof(input), stdin);
+
+        switch (input[0])
+        {
+        case 'A':
+        {
+            Nation *temp = addNation(input, database);
+            if (temp != NULL)
+                database = temp;
+            break;
+        }
+        case 'L':
+        {
+            printDatabase(database);
+            break;
+        }
+        case 'M':
+        {
+            addMedals(input, database);
+            break;
+        }
+        case 'O':
+        {   
+            Nation *temp = loadFromFile(input);
+            if (temp != NULL)
+            {
+                freeAndQuit(database);
+                database = temp;
+            }
+            break;
+        }
+        case 'W':
+        {
+            saveToFile(input, database);
+            break;
+        }
+        case 'Q':
+        {
+            freeAndQuit(database);
+            return 1;
+        }
+        default:
+            printf("Invalid command %c\n", input[0]);
+        }
+    }
 }
